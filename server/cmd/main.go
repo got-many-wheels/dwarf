@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -15,6 +14,8 @@ import (
 	"github.com/got-many-wheels/dwarf/server/internal/core"
 	"github.com/got-many-wheels/dwarf/server/internal/platform/db"
 	"github.com/got-many-wheels/dwarf/server/internal/platform/httpserver"
+	services "github.com/got-many-wheels/dwarf/server/internal/service"
+	urlrepo "github.com/got-many-wheels/dwarf/server/internal/store/url"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
@@ -38,7 +39,8 @@ func main() {
 	}()
 
 	// build the necessary indexes for the collection
-	urlsColl := client.Database("dwarf").Collection("urls")
+	db := client.Database("dwarf")
+	urlsColl := db.Collection("urls")
 	models := []mongo.IndexModel{
 		{
 			Keys: bson.D{
@@ -53,57 +55,28 @@ func main() {
 		return
 	}
 
+	services := buildServices(db)
+
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /{code}", func(w http.ResponseWriter, r *http.Request) {
 		code := r.PathValue("code")
-		if len(code) == 0 {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte("url code needed, got an empty string"))
+		u, err := services.URL.Get(context.Background(), code)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		filter := bson.M{"code": bson.M{"$eq": code}}
-		var doc core.URL
-		err = urlsColl.FindOne(context.TODO(), filter).Decode(&doc)
-		if err != nil {
-			if err == mongo.ErrNoDocuments {
-				http.Error(w, fmt.Sprintf("could not find url with code %q", code), http.StatusNotFound)
-				return
-			} else {
-				log.Printf("urlsColl.FindOne: %v", err)
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-		}
-		http.Redirect(w, r, doc.Long, http.StatusSeeOther)
+		http.Redirect(w, r, u.Long, http.StatusSeeOther)
 	})
 
 	mux.HandleFunc("DELETE /url/{code}", func(w http.ResponseWriter, r *http.Request) {
 		code := r.PathValue("code")
-		if len(code) == 0 {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte("url code needed, got an empty string"))
-			return
-		}
-		filter := bson.M{"code": bson.M{"$eq": code}}
-		res, err := urlsColl.DeleteOne(context.TODO(), filter)
+		err := services.URL.Delete(context.Background(), code)
 		if err != nil {
-			if err == mongo.ErrNoDocuments {
-				http.Error(w, fmt.Sprintf("could not find url with code %q", code), http.StatusNotFound)
-				return
-			} else {
-				log.Printf("urlsColl.DeleteOne: %v", err)
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-		}
-
-		if res.DeletedCount > 0 {
-			w.WriteHeader(http.StatusNoContent)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
-		http.Error(w, "not found", http.StatusNotFound)
+		w.WriteHeader(http.StatusOK)
 	})
 
 	mux.HandleFunc("POST /url", func(w http.ResponseWriter, r *http.Request) {
@@ -115,21 +88,13 @@ func main() {
 			return
 		}
 		doc.CreatedAt = time.Now().UTC()
-		result, err := urlsColl.InsertOne(context.TODO(), doc)
+		err = services.URL.InsertBatch(context.Background(), []core.URL{doc})
 		if err != nil {
-			if mongo.IsDuplicateKeyError(err) {
-				http.Error(w, fmt.Sprintf("url with code %q already exist", doc.Code), http.StatusConflict)
-				return
-			}
-			log.Printf("coll.InsertOne: %v", err)
-			w.WriteHeader(http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
-		buf := []byte(doc.String())
-		buf = fmt.Appendf(buf, "with _id of %v", result.InsertedID)
 		w.WriteHeader(http.StatusCreated)
-		w.Write(buf)
+		w.Write([]byte(doc.String()))
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -147,5 +112,16 @@ func main() {
 
 	if err := s.Run(ctx); err != nil {
 		log.Println(err)
+	}
+}
+
+func buildServices(db *mongo.Database) services.Services {
+	stores := defaultStoreFactory(db)
+	return services.New(stores)
+}
+
+func defaultStoreFactory(db *mongo.Database) services.Stores {
+	return services.Stores{
+		URL: urlrepo.New(db),
 	}
 }
