@@ -3,6 +3,7 @@ package url
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/got-many-wheels/dwarf/server/internal/core"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -23,6 +24,7 @@ func New(db *mongo.Database) *Repo {
 
 func (r *Repo) InsertBatch(ctx context.Context, items []core.URL) error {
 	_, err := r.col.InsertMany(context.TODO(), items)
+	log.Println(items)
 	if err != nil {
 		return err
 	}
