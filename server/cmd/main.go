@@ -2,12 +2,12 @@ package main
 
 import (
 	"context"
-	"flag"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/got-many-wheels/dwarf/server/internal/platform/config"
 	"github.com/got-many-wheels/dwarf/server/internal/platform/database"
 	"github.com/got-many-wheels/dwarf/server/internal/platform/httpserver"
 	services "github.com/got-many-wheels/dwarf/server/internal/service"
@@ -17,11 +17,12 @@ import (
 )
 
 func main() {
-	addr := flag.String("addr", ":8080", "port of the http server")
-	mongoURI := flag.String("mongouri", "mongodb://localhost:27017", "mongodb uri")
-	flag.Parse()
+	cfg, err := config.Init()
+	if err != nil {
+		panic(err)
+	}
 
-	db, err := database.Init(*mongoURI, "dwarf")
+	db, err := database.Init(cfg.DatabaseURI, cfg.DatabaseName)
 	if err != nil {
 		panic(err)
 	}
@@ -36,7 +37,7 @@ func main() {
 	mux := mux.New(services)
 
 	ctx, cancel := context.WithCancel(context.Background())
-	s := httpserver.New(mux, *addr)
+	s := httpserver.New(mux, cfg.Port)
 
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
