@@ -11,6 +11,7 @@ import (
 	"github.com/got-many-wheels/dwarf/server/internal/platform/database"
 	"github.com/got-many-wheels/dwarf/server/internal/platform/httpserver"
 	services "github.com/got-many-wheels/dwarf/server/internal/service"
+	seqrepo "github.com/got-many-wheels/dwarf/server/internal/store/sequence"
 	urlrepo "github.com/got-many-wheels/dwarf/server/internal/store/url"
 	"github.com/got-many-wheels/dwarf/server/internal/transport/mux"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -61,6 +62,7 @@ func buildServices(db *mongo.Database) services.Services {
 
 func defaultStoreFactory(db *mongo.Database) services.Stores {
 	return services.Stores{
-		URL: urlrepo.New(db),
+		URL:      urlrepo.New(db),
+		Sequence: seqrepo.New(db),
 	}
 }

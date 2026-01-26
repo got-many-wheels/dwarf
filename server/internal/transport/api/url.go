@@ -11,13 +11,13 @@ import (
 	"github.com/got-many-wheels/dwarf/server/internal/service/url"
 )
 
-func Register(mux *http.ServeMux, s *url.URLService) {
+func Register(mux *http.ServeMux, s *url.Service) {
 	mux.HandleFunc("GET /{code}", get(s))
 	mux.HandleFunc("POST /url", post(s))
 	mux.HandleFunc("DELETE /url/{code}", delete(s))
 }
 
-func get(s *url.URLService) http.HandlerFunc {
+func get(s *url.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		code := r.PathValue("code")
 		u, err := s.Get(context.Background(), code)
@@ -29,7 +29,7 @@ func get(s *url.URLService) http.HandlerFunc {
 	}
 }
 
-func post(s *url.URLService) http.HandlerFunc {
+func post(s *url.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var doc core.URL
 		err := json.NewDecoder(r.Body).Decode(&doc)
@@ -39,17 +39,18 @@ func post(s *url.URLService) http.HandlerFunc {
 			return
 		}
 		doc.CreatedAt = time.Now().UTC()
-		err = s.InsertBatch(context.Background(), []core.URL{doc})
+		docs := []core.URL{doc}
+		err = s.InsertBatch(context.Background(), docs)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		w.WriteHeader(http.StatusCreated)
-		w.Write([]byte(doc.String()))
+		w.Write([]byte(docs[0].String()))
 	}
 }
 
-func delete(s *url.URLService) http.HandlerFunc {
+func delete(s *url.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		code := r.PathValue("code")
 		err := s.Delete(context.Background(), code)
