@@ -4,6 +4,9 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+
+	"github.com/google/uuid"
+	slogctx "github.com/veqryn/slog-context"
 )
 
 const key = "logger"
@@ -12,6 +15,11 @@ func Middleware(logger *slog.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := context.WithValue(r.Context(), key, logger)
+			reqid := r.Header.Get("x_request_id")
+			if len(reqid) == 0 {
+				reqid = uuid.NewString()
+			}
+			ctx = slogctx.Append(ctx, "x_request_id", reqid)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

@@ -8,6 +8,7 @@ import (
 	services "github.com/got-many-wheels/dwarf/server/internal/service"
 	apiurl "github.com/got-many-wheels/dwarf/server/internal/transport/api"
 	"github.com/got-many-wheels/dwarf/server/internal/transport/middleware/logger"
+	slogctx "github.com/veqryn/slog-context"
 )
 
 type Mux struct {
@@ -16,9 +17,12 @@ type Mux struct {
 }
 
 func New(services services.Services) *Mux {
-	l := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+	slogBaseHandler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 		AddSource: true,
-	}))
+	})
+	slogWithCtx := slogctx.NewHandler(slogBaseHandler, nil)
+	l := slog.New(slogWithCtx)
+
 	mux := &Mux{
 		ServeMux: http.NewServeMux(),
 	}
