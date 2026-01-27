@@ -3,12 +3,13 @@ package apiurl
 import (
 	"context"
 	"encoding/json"
-	"log"
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/got-many-wheels/dwarf/server/internal/core"
 	"github.com/got-many-wheels/dwarf/server/internal/service/url"
+	"github.com/got-many-wheels/dwarf/server/internal/transport/middleware/logger"
 )
 
 func Register(mux *http.ServeMux, s *url.Service) {
@@ -19,9 +20,12 @@ func Register(mux *http.ServeMux, s *url.Service) {
 
 func get(s *url.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		logger := logger.FromContext(ctx)
 		code := r.PathValue("code")
 		u, err := s.Get(context.Background(), code)
 		if err != nil {
+			logger.Error(err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -31,10 +35,12 @@ func get(s *url.Service) http.HandlerFunc {
 
 func post(s *url.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		logger := logger.FromContext(ctx)
 		var doc core.URL
 		err := json.NewDecoder(r.Body).Decode(&doc)
 		if err != nil {
-			log.Printf("could not decode request body: %v", err)
+			logger.Error(fmt.Sprintf("could not decode request body: %v", err))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -42,6 +48,7 @@ func post(s *url.Service) http.HandlerFunc {
 		docs := []core.URL{doc}
 		err = s.InsertBatch(context.Background(), docs)
 		if err != nil {
+			logger.Error(err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -52,9 +59,12 @@ func post(s *url.Service) http.HandlerFunc {
 
 func delete(s *url.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		logger := logger.FromContext(ctx)
 		code := r.PathValue("code")
 		err := s.Delete(context.Background(), code)
 		if err != nil {
+			logger.Error(err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
