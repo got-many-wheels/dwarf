@@ -2,13 +2,12 @@ package apiurl
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
-	"github.com/got-many-wheels/dwarf/server/internal/core"
+	coreurl "github.com/got-many-wheels/dwarf/server/internal/core/url"
 	"github.com/got-many-wheels/dwarf/server/internal/service/url"
+	"github.com/got-many-wheels/dwarf/server/internal/transport/helpers"
 	"github.com/got-many-wheels/dwarf/server/internal/transport/middleware/logger"
 )
 
@@ -25,8 +24,7 @@ func get(s *url.Service) http.HandlerFunc {
 		code := r.PathValue("code")
 		u, err := s.Get(context.Background(), code)
 		if err != nil {
-			logger.Error(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			helpers.WriteError(ctx, w, logger, err, "s.Get() error")
 			return
 		}
 		http.Redirect(w, r, u.Long, http.StatusSeeOther)
@@ -37,23 +35,19 @@ func post(s *url.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		logger := logger.FromContext(ctx)
-		var doc core.URL
-		err := json.NewDecoder(r.Body).Decode(&doc)
+		doc, err := helpers.DecodeJSON[coreurl.URL](r)
 		if err != nil {
-			logger.Error(fmt.Sprintf("could not decode request body: %v", err))
-			w.WriteHeader(http.StatusInternalServerError)
+			helpers.WriteError(ctx, w, logger, err, "helpers.DecodeJSON error")
 			return
 		}
 		doc.CreatedAt = time.Now().UTC()
-		docs := []core.URL{doc}
+		docs := []coreurl.URL{doc}
 		err = s.InsertBatch(context.Background(), docs)
 		if err != nil {
-			logger.Error(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			helpers.WriteError(ctx, w, logger, err, "s.InsertBatch() error")
 			return
 		}
-		w.WriteHeader(http.StatusCreated)
-		w.Write([]byte(docs[0].String()))
+		helpers.WriteJSON(ctx, http.StatusCreated, w, docs[0]) // index 0 because we only insert once
 	}
 }
 
@@ -64,10 +58,9 @@ func delete(s *url.Service) http.HandlerFunc {
 		code := r.PathValue("code")
 		err := s.Delete(context.Background(), code)
 		if err != nil {
-			logger.Error(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			helpers.WriteError(ctx, w, logger, err, "s.Delete() error")
 			return
 		}
-		w.WriteHeader(http.StatusOK)
+		helpers.WriteJSON(ctx, http.StatusNoContent, w, nil)
 	}
 }

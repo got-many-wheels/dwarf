@@ -3,7 +3,7 @@ package sequence
 import (
 	"context"
 
-	"github.com/got-many-wheels/dwarf/server/internal/core"
+	coresequence "github.com/got-many-wheels/dwarf/server/internal/core/sequence"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
@@ -24,7 +24,7 @@ func (r *Repo) Next(ctx context.Context, name string) (int64, error) {
 	opts := options.FindOneAndUpdate().
 		SetUpsert(true).
 		SetReturnDocument(options.After)
-	var seq core.Sequence
+	var seq coresequence.Sequence
 	err := r.col.FindOneAndUpdate(
 		ctx,
 		bson.M{"_id": name},

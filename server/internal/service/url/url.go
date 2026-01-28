@@ -3,14 +3,14 @@ package url
 import (
 	"context"
 
-	"github.com/got-many-wheels/dwarf/server/internal/core"
+	coreurl "github.com/got-many-wheels/dwarf/server/internal/core/url"
 	"github.com/got-many-wheels/dwarf/server/internal/service/sequence"
 	"github.com/got-many-wheels/dwarf/server/utils"
 )
 
 type Store interface {
-	InsertBatch(ctx context.Context, items []core.URL) error
-	Get(ctx context.Context, code string) (core.URL, error)
+	InsertBatch(ctx context.Context, items []coreurl.URL) error
+	Get(ctx context.Context, code string) (coreurl.URL, error)
 	Delete(ctx context.Context, code string) error
 }
 
@@ -23,7 +23,7 @@ func New(store Store, seq sequence.Store) *Service {
 	return &Service{store: store, seq: seq}
 }
 
-func (s *Service) InsertBatch(ctx context.Context, items []core.URL) error {
+func (s *Service) InsertBatch(ctx context.Context, items []coreurl.URL) error {
 	for i := range items {
 		seq, err := s.seq.Next(ctx, "url")
 		if err != nil {
@@ -38,7 +38,7 @@ func (s *Service) InsertBatch(ctx context.Context, items []core.URL) error {
 	return s.store.InsertBatch(ctx, items)
 }
 
-func (s *Service) Get(ctx context.Context, code string) (core.URL, error) {
+func (s *Service) Get(ctx context.Context, code string) (coreurl.URL, error) {
 	return s.store.Get(ctx, code)
 }
 
