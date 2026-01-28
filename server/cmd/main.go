@@ -17,6 +17,10 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
+// @title Dwarf URL API
+// @version 1.0
+// @description URL shortener service
+// @BasePath /
 func main() {
 	cfg, err := config.Init()
 	if err != nil {

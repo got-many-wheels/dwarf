@@ -5,12 +5,18 @@ import (
 	"time"
 )
 
+// URL represents a shortened URL
 type URL struct {
-	// Code to represent the shortened url as a call name
+	// Short code representing the URL
+	// example: aZ3kLm
 	Code string `json:"code" bson:"code"`
-	// The original url
+
+	// Original long URL
+	// example: https://example.com/some/very/long/path
 	Long string `json:"long" bson:"long"`
-	// The date of the url was created
+
+	// Time when the URL was created
+	// example: 2025-01-28T12:34:56Z
 	CreatedAt time.Time `json:"created_at" bson:"created_at"`
 }
 

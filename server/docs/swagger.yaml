@@ -1,0 +1,114 @@
+basePath: /
+definitions:
+  coreurl.URL:
+    properties:
+      code:
+        description: |-
+          Short code representing the URL
+          example: aZ3kLm
+        type: string
+      created_at:
+        description: |-
+          Time when the URL was created
+          example: 2025-01-28T12:34:56Z
+        type: string
+      long:
+        description: |-
+          Original long URL
+          example: https://example.com/some/very/long/path
+        type: string
+    type: object
+  helpers.ErrorResponse:
+    properties:
+      errors:
+        additionalProperties:
+          type: string
+        type: object
+    type: object
+info:
+  contact: {}
+  description: URL shortener service
+  title: Dwarf URL API
+  version: "1.0"
+paths:
+  /{code}:
+    get:
+      description: Resolve a short code and redirect to the original long URL
+      parameters:
+      - description: Short URL code
+        in: path
+        name: code
+        required: true
+        type: string
+      responses:
+        "303":
+          description: Redirect
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/helpers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/helpers.ErrorResponse'
+      summary: Redirect to original URL
+      tags:
+      - url
+  /url:
+    post:
+      consumes:
+      - application/json
+      description: Create a new short URL entry
+      parameters:
+      - description: URL payload
+        in: body
+        name: url
+        required: true
+        schema:
+          $ref: '#/definitions/coreurl.URL'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/coreurl.URL'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/helpers.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/helpers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/helpers.ErrorResponse'
+      summary: Create a shortened URL
+      tags:
+      - url
+  /url/{code}:
+    delete:
+      description: Delete a short URL by code
+      parameters:
+      - description: Short URL code
+        in: path
+        name: code
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/helpers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/helpers.ErrorResponse'
+      summary: Delete a shortened URL
+      tags:
+      - url
+swagger: "2.0"

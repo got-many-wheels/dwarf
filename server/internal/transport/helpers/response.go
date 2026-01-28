@@ -27,6 +27,11 @@ func WriteJSON(ctx context.Context, status int, w http.ResponseWriter, v any) {
 	}
 }
 
+// ErrorResponse represents a standard API error response
+type ErrorResponse struct {
+	Errors map[string]string `json:"errors"`
+}
+
 func WriteError(ctx context.Context, w http.ResponseWriter, log *slog.Logger, err error, msg string) {
 	code := httpstatus.Status(err)
 
@@ -36,9 +41,7 @@ func WriteError(ctx context.Context, w http.ResponseWriter, log *slog.Logger, er
 		log.WarnContext(ctx, msg, "error", err)
 	}
 
-	resp := struct {
-		Errors map[string]string `json:"errors"`
-	}{
+	resp := ErrorResponse{
 		Errors: make(map[string]string),
 	}
 

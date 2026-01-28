@@ -17,6 +17,15 @@ func Register(mux *http.ServeMux, s *url.Service) {
 	mux.HandleFunc("DELETE /url/{code}", delete(s))
 }
 
+// get godoc
+// @Summary Redirect to original URL
+// @Description Resolve a short code and redirect to the original long URL
+// @Tags url
+// @Param code path string true "Short URL code"
+// @Success 303 "Redirect"
+// @Failure 404 {object} helpers.ErrorResponse
+// @Failure 500 {object} helpers.ErrorResponse
+// @Router /{code} [get]
 func get(s *url.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -31,6 +40,18 @@ func get(s *url.Service) http.HandlerFunc {
 	}
 }
 
+// post godoc
+// @Summary Create a shortened URL
+// @Description Create a new short URL entry
+// @Tags url
+// @Accept json
+// @Produce json
+// @Param url body coreurl.URL true "URL payload"
+// @Success 201 {object} coreurl.URL
+// @Failure 400 {object} helpers.ErrorResponse
+// @Failure 409 {object} helpers.ErrorResponse
+// @Failure 500 {object} helpers.ErrorResponse
+// @Router /url [post]
 func post(s *url.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -51,6 +72,15 @@ func post(s *url.Service) http.HandlerFunc {
 	}
 }
 
+// delete godoc
+// @Summary Delete a shortened URL
+// @Description Delete a short URL by code
+// @Tags url
+// @Param code path string true "Short URL code"
+// @Success 204 "No Content"
+// @Failure 404 {object} helpers.ErrorResponse
+// @Failure 500 {object} helpers.ErrorResponse
+// @Router /url/{code} [delete]
 func delete(s *url.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()

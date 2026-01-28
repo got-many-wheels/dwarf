@@ -5,9 +5,11 @@ import (
 	"net/http"
 	"os"
 
+	_ "github.com/got-many-wheels/dwarf/server/docs"
 	services "github.com/got-many-wheels/dwarf/server/internal/service"
 	apiurl "github.com/got-many-wheels/dwarf/server/internal/transport/api"
 	"github.com/got-many-wheels/dwarf/server/internal/transport/middleware/logger"
+	httpSwagger "github.com/swaggo/http-swagger/v2"
 	slogctx "github.com/veqryn/slog-context"
 )
 
@@ -27,7 +29,12 @@ func New(services services.Services) *Mux {
 		ServeMux: http.NewServeMux(),
 	}
 	mux.UseMiddleware(logger.Middleware(l))
+
+	// register swagger api documents endpoint
+	mux.ServeMux.Handle("/swagger/", httpSwagger.WrapHandler)
+
 	apiurl.Register(mux.ServeMux, services.URL)
+
 	return mux
 }
 
