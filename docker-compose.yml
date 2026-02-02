@@ -1,0 +1,10 @@
+version: "0.1.0"
+services:
+  server:
+    env_file:
+      - ".env"
+    build:
+      dockerfile: "./images/server.Dockerfile"
+      context: "."
+    ports:
+      - "8080:8080"
