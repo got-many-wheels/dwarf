@@ -8,10 +8,8 @@ import (
 )
 
 type Config struct {
-	// Mongo DB URI to connect to the database
+	// Database URI to connect to the database
 	DatabaseURI string `config:"DATABASE_URI"`
-	// The database name that we're going to use
-	DatabaseName string `config:"DATABASE_NAME"`
 	// Address of the http server
 	Port string `config:"PORT"`
 }

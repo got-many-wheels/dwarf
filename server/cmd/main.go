@@ -11,10 +11,9 @@ import (
 	"github.com/got-many-wheels/dwarf/server/internal/platform/database"
 	"github.com/got-many-wheels/dwarf/server/internal/platform/httpserver"
 	services "github.com/got-many-wheels/dwarf/server/internal/service"
-	seqrepo "github.com/got-many-wheels/dwarf/server/internal/store/sequence"
 	urlrepo "github.com/got-many-wheels/dwarf/server/internal/store/url"
 	"github.com/got-many-wheels/dwarf/server/internal/transport/mux"
-	"go.mongodb.org/mongo-driver/v2/mongo"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // @title Dwarf URL API
@@ -27,18 +26,13 @@ func main() {
 		panic(err)
 	}
 
-	db, err := database.Init(cfg.DatabaseURI, cfg.DatabaseName)
+	pool, err := database.Connect(cfg.DatabaseURI)
 	if err != nil {
 		panic(err)
 	}
-	defer func() {
-		err := db.Client.Disconnect(context.TODO())
-		if err != nil {
-			log.Println(err)
-		}
-	}()
+	defer pool.Close()
 
-	services := buildServices(db.DB)
+	services := buildServices(pool)
 	mux := mux.New(services)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -59,14 +53,13 @@ func main() {
 	}
 }
 
-func buildServices(db *mongo.Database) services.Services {
-	stores := defaultStoreFactory(db)
+func buildServices(pool *pgxpool.Pool) services.Services {
+	stores := defaultStoreFactory(pool)
 	return services.New(stores)
 }
 
-func defaultStoreFactory(db *mongo.Database) services.Stores {
+func defaultStoreFactory(pool *pgxpool.Pool) services.Stores {
 	return services.Stores{
-		URL:      urlrepo.New(db),
-		Sequence: seqrepo.New(db),
+		URL: urlrepo.New(pool),
 	}
 }

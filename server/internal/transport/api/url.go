@@ -68,6 +68,7 @@ func post(s *url.Service) http.HandlerFunc {
 			helpers.WriteError(ctx, w, logger, err, "s.InsertBatch() error")
 			return
 		}
+
 		helpers.WriteJSON(ctx, http.StatusCreated, w, docs[0]) // index 0 because we only insert once
 	}
 }

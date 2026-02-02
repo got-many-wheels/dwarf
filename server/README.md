@@ -18,8 +18,13 @@
 ### Run the server
 
 ```bash
-export DATABASE_URI=mongodb://localhost:27017
-export DATABASE_NAME=dwarf
+go mod download
+
+# Required to generate sql queries to code/business logic
+go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+go generate ./cmd
+
+export DATABASE_URI=...
 export PORT=:8080
 go run ./cmd
 ```

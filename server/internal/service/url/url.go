@@ -4,8 +4,6 @@ import (
 	"context"
 
 	coreurl "github.com/got-many-wheels/dwarf/server/internal/core/url"
-	"github.com/got-many-wheels/dwarf/server/internal/service/sequence"
-	"github.com/got-many-wheels/dwarf/server/utils"
 )
 
 type Store interface {
@@ -16,25 +14,13 @@ type Store interface {
 
 type Service struct {
 	store Store
-	seq   sequence.Store
 }
 
-func New(store Store, seq sequence.Store) *Service {
-	return &Service{store: store, seq: seq}
+func New(store Store) *Service {
+	return &Service{store: store}
 }
 
 func (s *Service) InsertBatch(ctx context.Context, items []coreurl.URL) error {
-	for i := range items {
-		seq, err := s.seq.Next(ctx, "url")
-		if err != nil {
-			return err
-		}
-		// generate code with base62 coming from the record count
-		// of urls if no custom code provided
-		if len(items[i].Code) == 0 {
-			items[i].Code = utils.DecimalToBase62(seq)
-		}
-	}
 	return s.store.InsertBatch(ctx, items)
 }
 
