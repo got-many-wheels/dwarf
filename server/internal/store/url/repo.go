@@ -3,6 +3,7 @@ package url
 import (
 	"context"
 
+	coreerror "github.com/got-many-wheels/dwarf/server/internal/core/error"
 	coreurl "github.com/got-many-wheels/dwarf/server/internal/core/url"
 	"github.com/got-many-wheels/dwarf/server/internal/store/database/sqlc"
 	"github.com/got-many-wheels/dwarf/server/utils"
@@ -25,7 +26,7 @@ func (r *Repo) InsertBatch(ctx context.Context, items []coreurl.URL) error {
 
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
-		return err
+		return coreerror.FromStore(err, nil)
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 	qtx := r.q.WithTx(tx)
@@ -36,7 +37,7 @@ func (r *Repo) InsertBatch(ctx context.Context, items []coreurl.URL) error {
 			Code: item.Code,
 		})
 		if err != nil {
-			return err
+			return coreerror.FromStore(err, nil)
 		}
 
 		// generate url code if not provided
@@ -51,19 +52,19 @@ func (r *Repo) InsertBatch(ctx context.Context, items []coreurl.URL) error {
 		}
 	}
 
-	return tx.Commit(ctx)
+	return coreerror.FromStore(tx.Commit(ctx), nil)
 }
 
 func (r *Repo) Get(ctx context.Context, code string) (coreurl.URL, error) {
 	row, err := r.q.GetURLByCode(ctx, code)
 	if err != nil {
-		return coreurl.URL{}, err
+		return coreurl.URL{}, coreerror.FromStore(err, nil)
 	}
 	return mapUrl(row), nil
 }
 
 func (r *Repo) Delete(ctx context.Context, code string) error {
-	return r.q.DeleteURLByCode(ctx, code)
+	return coreerror.FromStore(r.q.DeleteURLByCode(ctx, code), nil)
 }
 
 func mapUrl(row sqlc.Url) coreurl.URL {

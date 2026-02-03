@@ -3,6 +3,7 @@ package helpers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -35,9 +36,17 @@ type ErrorResponse struct {
 func WriteError(ctx context.Context, w http.ResponseWriter, log *slog.Logger, err error, msg string) {
 	code := httpstatus.Status(err)
 
-	if code >= http.StatusInternalServerError {
+	// skip writing response, client disconnected
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return
+	}
+
+	switch {
+	case code >= http.StatusInternalServerError:
 		log.ErrorContext(ctx, msg, "error", err)
-	} else {
+	case code == http.StatusNotFound:
+		// noop
+	default:
 		log.WarnContext(ctx, msg, "error", err)
 	}
 
