@@ -39,3 +39,7 @@ make run-server \
     DATABASE_PORT=... \
     DATABASE_NAME=...
 ```
+
+Or you can just save a lot of time by just using Docker! create a .env file
+with keys that you can find in [.env-example](.env-example) and fill to your
+liking. After that you can do `docker-compose up -d` to run the containers.

@@ -1,10 +1,42 @@
-version: "0.1.0"
 services:
+  postgres:
+    image: postgres:18
+    restart: always
+    shm_size: 128mb
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"]
+      interval: 10s
+      timeout: 1s
+      retries: 5
+    ports:
+      - 6000:5432
+    volumes:
+      - pgdata:/var/lib/postgresql
+
+  migration:
+    image: migrate/migrate
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["-path", "/migrations", "-database", "${DATABASE_URI}", "up"]
+    volumes:
+      - ./migrations:/migrations
+
   server:
     env_file:
-      - ".env"
+      - .env
     build:
-      dockerfile: "./images/server.Dockerfile"
-      context: "."
+      dockerfile: ./images/server.Dockerfile
+      context: .
     ports:
-      - "8080:8080"
+      - 8080:8080
+    depends_on:
+      migration:
+        condition: service_completed_successfully
+
+volumes:
+  pgdata:
