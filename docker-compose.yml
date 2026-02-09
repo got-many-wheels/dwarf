@@ -14,6 +14,10 @@ services:
       - 6000:5432
     volumes:
       - pgdata:/var/lib/postgresql
+    logging:
+      driver: loki
+      options:
+        loki-url: http://localhost:3100/loki/api/v1/push
 
   migration:
     image: migrate/migrate
@@ -25,6 +29,10 @@ services:
     command: ["-path", "/migrations", "-database", "${DATABASE_URI}", "up"]
     volumes:
       - ./migrations:/migrations
+    logging:
+      driver: loki
+      options:
+        loki-url: http://localhost:3100/loki/api/v1/push
 
   server:
     env_file:
@@ -37,6 +45,10 @@ services:
     depends_on:
       migration:
         condition: service_completed_successfully
+    logging:
+      driver: loki
+      options:
+        loki-url: http://localhost:3100/loki/api/v1/push
 
 volumes:
   pgdata:

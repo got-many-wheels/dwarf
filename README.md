@@ -43,3 +43,28 @@ make run-server \
 Or you can just save a lot of time by just using Docker! create a .env file
 with keys that you can find in [.env-example](.env-example) and fill to your
 liking. After that you can do `docker-compose up -d` to run the containers.
+
+If you want to centralize the logging of the services with Grafana Loki.
+You need to install the docker plugin first by doing:
+
+```bash
+docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions
+
+# restart docker service
+systemctl restart docker
+
+# verify if plugin is installed
+docker plugin ls
+```
+
+You should see the installed plugin like this:
+
+```bash
+ddd2367c8693   loki:latest   Loki Logging Driver   true
+```
+
+After that you can `cd` to the `loki` directory and run:
+
+```bash
+docker-compose up -d --build
+```
